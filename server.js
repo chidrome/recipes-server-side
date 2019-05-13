@@ -53,14 +53,13 @@ const client = new pg.Client(process.env.DATABASE_URL);
 client.connect();
 client.on('error', err => console.error(err));
 
-
 //Constructor
 function Recipe (recipe){
     this.label = recipe.label;
     this.image = recipe.image;
-    this.yield = recipe.yield;
-    this.calories = Math.ceil(recipe.calories);
-    this.totalTime = recipe.totalTime;
+    this.yield = Number(recipe.yield);
+    this.calories = Math.ceil(Number(recipe.calories));
+    this.totalTime = Number(recipe.totalTime);
     this.ingredients = recipe.ingredients;
     this.dietLabels = recipe.dietLabels;
     this.healthLabels = recipe.healthLabels;
@@ -68,14 +67,16 @@ function Recipe (recipe){
 }
 
 function saveToDatabase(recipe){
-    const SQL = 'INSERT into recipes (label, image, yield, calories, total_time, ingredients, diet_labels, health_labels) VALUES($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING RETURNING id;';
-    const values = [recipe.label, recipe.image, Number(recipe.yield), Number(recipe.calories), Number(recipe.total_time), recipe.ingredients, recipe.diet_labels, recipe.health_labels];
+    const SQL = 'INSERT into recipes (label, image, yield, calories, total_time, ingredients, diet_labels, health_labels) VALUES($1, $2, $3, $4, $5, $6, $7, $8);';
+    const values = [recipe.label, recipe.image, recipe.yield, recipe.calories, recipe.total_time, recipe.ingredients, recipe.diet_labels, recipe.health_labels];
 
     client.query(SQL, values);
 }
 
 //API Routes
-app.get('/nameSearch', getRecipeByName);
+app.get('/:diet', getRecipeByName);
+app.get('/:q', getRecipeByName);
+app.get('/:q/:diet', getRecipeByName);
 
 //Path functions
 function getRecipeByName(req, res) {
@@ -88,14 +89,20 @@ function getRecipeByName(req, res) {
     // } else {
     //     url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
     // }
-
-    url = `https://api.edamam.com/search?q=chicken&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+    url = `https://api.edamam.com/search?q=chocolate&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
 
     return superagent.get(url)
         .then(res =>{
-            const recipe = new Recipe(res.body.hits);
-            console.log(res.body.hits);
-            saveToDatabase(recipe);
+            if(res.body.hits.length > 0) {
+                res.body.hits.forEach( resultRecipe => {
+                    console.log('i am a recipe!!! ', resultRecipe.recipe);
+                    let recipe = new Recipe(resultRecipe.recipe);
+                    saveToDatabase(recipe);
+                });
+            }
+            //const recipe = new Recipe(res.body.hits);
+            //console.log(res.body.hits);
+            //saveToDatabase(recipe);
         });
 }
 
