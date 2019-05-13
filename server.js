@@ -28,7 +28,7 @@ result.body.hits
     bookmarked: false,
     bought: false },
 */
-//-----------------------------------------------------------------
+//--------------------------------------------------------------------------------------
 
 //Global variables
 const recipeResults = [];
@@ -48,6 +48,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 
+//Database Setup
+const client = new pg.Client(process.env.DATABASE_URL);
+client.connect();
+client.on('error', err => console.error(err));
+
+
 //Constructor
 function Recipe (recipe){
     this.label = recipe.label;
@@ -61,24 +67,35 @@ function Recipe (recipe){
     recipeResults.push(this);
 }
 
+function saveToDatabase(recipe){
+    const SQL = 'INSERT into recipes (label, image, yield, calories, total_time, ingredients, diet_labels, health_labels) VALUES($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING RETURNING id;';
+    const values = [recipe.label, recipe.image, Number(recipe.yield), Number(recipe.calories), Number(recipe.total_time), recipe.ingredients, recipe.diet_labels, recipe.health_labels];
+
+    client.query(SQL, values);
+}
+
 //API Routes
 app.get('/nameSearch', getRecipeByName);
 
 //Path functions
 function getRecipeByName(req, res) {
     let url = '';
-    if ( req.query.diet && req.query.q ) {
-        url = `https://api.edamam.com/search?q=${req.query.q}&diet=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-    } else if ( req.query.diet ) {
-        url = `https://api.edamam.com/search?q=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-    } else {
-        url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-    }
-    //const url = `https://api.edamam.com/search?q=chicken&diet=balanced&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+
+    // if ( req.query.diet && req.query.q ) {
+    //     url = `https://api.edamam.com/search?q=${req.query.q}&diet=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+    // } else if ( req.query.diet ) {
+    //     url = `https://api.edamam.com/search?q=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+    // } else {
+    //     url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+    // }
+
+    url = `https://api.edamam.com/search?q=chicken&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
 
     return superagent.get(url)
         .then(res =>{
+            const recipe = new Recipe(res.body.hits);
             console.log(res.body.hits);
+            saveToDatabase(recipe);
         });
 }
 
