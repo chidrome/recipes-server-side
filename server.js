@@ -65,8 +65,16 @@ function Recipe (recipe){
 app.get('/nameSearch', getRecipeByName);
 
 //Path functions
-function getRecipeByName(req, res){
-    const url = `https://api.edamam.com/search?q=chicken&diet=balanced&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+function getRecipeByName(req, res) {
+    let url = '';
+    if ( req.query.diet && req.query.q ) {
+        url = `https://api.edamam.com/search?q=${req.query.q}&diet=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+    } else if ( req.query.diet ) {
+        url = `https://api.edamam.com/search?q=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+    } else {
+        url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+    }
+    //const url = `https://api.edamam.com/search?q=chicken&diet=balanced&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
 
     return superagent.get(url)
         .then(res =>{
