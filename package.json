@@ -11,7 +11,7 @@
     "type": "git",
     "url": "git+https://github.com/chidrome/recipes-server-side.git"
   },
-  "author": "",
+  "author": "paolo jen williams sudip",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/chidrome/recipes-server-side/issues"
@@ -23,5 +23,6 @@
     "express": "^4.16.4",
     "pg": "^7.11.0",
     "superagent": "^5.0.5"
-  }
+  },
+  "devDependencies": {}
 }
