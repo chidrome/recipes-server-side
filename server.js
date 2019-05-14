@@ -70,13 +70,6 @@ function getFromDatabase(req){
         }
         SQL = `SELECT * FROM recipes WHERE ARRAY_TO_STRING(${columnName}, '||') LIKE '%${inputType}%';`;
     }
-
-
-    /*
-    SELECT *
-FROM employees
-WHERE (city = 'Miami' AND first_name = 'Sarah')
-*/
     return client.query(SQL);
 }
 
