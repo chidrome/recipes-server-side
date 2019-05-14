@@ -37,6 +37,14 @@ function Recipe (recipe){
     recipeResults.push(this);
 }
 
+//API Routes
+app.get('/', getAll);
+app.get('/healthsearch/:health', getRecipes);
+app.get('/labelsearch/:q', getRecipes);
+app.get('/labelhealthsearch/:q/:health', getRecipes);
+
+
+/********* sql queries to postgres *********/
 function saveToDatabase(recipe){
     const SQL = 'INSERT into recipes (label, image, yield, url, calories, total_time, ingredients, diet_labels, health_labels) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT DO NOTHING;';
     const values = [recipe.label, recipe.image, recipe.yield, recipe.url, recipe.calories, recipe.totalTime, recipe.ingredients, recipe.dietLabels, recipe.healthLabels];
@@ -44,53 +52,76 @@ function saveToDatabase(recipe){
     client.query(SQL, values);
 }
 
-function getFromDatabase(inputType, columnName){
-    const SQL = `SELECT * FROM recipes WHERE ARRAY_TO_STRING(${columnName}, '||') LIKE '%${inputType}%';`;
+function getFromDatabase(req){
+    let inputType;
+    let columnName;
+    let SQL;
+    if(req.query.health && req.query.q) {
+        SQL = `SELECT * FROM recipes
+        WHERE (ARRAY_TO_STRING(health_labels, '||') LIKE '%${req.query.health}%' AND ARRAY_TO_STRING(ingredients, '||') LIKE '%${req.query.q}%');`;
+    }
+    else {
+        if (!req.query.q) {
+            inputType = 'health';
+            columnName = 'health_labels';
+        } else {
+            inputType = req.query.q;
+            columnName = 'ingredients';
+        }
+        SQL = `SELECT * FROM recipes WHERE ARRAY_TO_STRING(${columnName}, '||') LIKE '%${inputType}%';`;
+    }
+    return client.query(SQL);
+}
 
-    return client.query(SQL)
+//get all recipes
+function getAll(req, res) {
+    const SQL = 'SELECT * FROM recipes;';
+
+    return client.query(SQL).then(result => {
+        if(result.rowCount > 0) {
+            result.rows.forEach(row => {
+                new Recipe(row);
+                console.log(row);
+            });
+            res.send(recipeResults);
+        } else {
+            console.log('database is empty');
+        }
+    });
+}
+
+/*************** calls to api *****************************/
+function getRecipes(req, res) {
+
+    getFromDatabase(req)
         .then(result => {
-            if(result.rowCount > 0){
-                result.rows.forEach(row=>{
+            if(result.rowCount > 0) {
+                result.rows.forEach(row => {
                     new Recipe(row);
                     console.log(row);
                 });
-            }else{
-                console.log('database is empty');
+                res.send(recipeResults);
+            } else { //query
+                let url = '';
+
+                if ( req.query.health && req.query.q ) {
+                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+                } else if ( req.query.health ) {
+                    url = `https://api.edamam.com/search?q=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+                } else {
+                    url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+                }
+                return superagent.get(url)
+                    .then(result =>{
+                        if(result.body.hits.length > 0) {
+                            result.body.hits.forEach( resultRecipe => {
+                                let recipe = new Recipe(resultRecipe.recipe);
+                                saveToDatabase(recipe);
+                            });
+                        }
+                        res.send(recipeResults);
+                    });
             }
-        });
-}
-
-//API Routes
-app.get('/', (res, req) => {
-    console.log('hello, welcome to the back end.');
-});
-app.get('/:health', getRecipes);
-app.get('/:q', getRecipes);
-app.get('/:q/:health', getRecipes);
-
-//Path functions
-function getRecipes(req, res) {
-    let url = '';
-
-    if ( req.query.health && req.query.q ) {
-        url = `https://api.edamam.com/search?q=${req.query.q}&health=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-    } else if ( req.query.health ) {
-        url = `https://api.edamam.com/search?q=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-    } else {
-        url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-    }
-    url = `https://api.edamam.com/search?q=garlic&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-
-    return superagent.get(url)
-        .then(result =>{
-            if(result.body.hits.length > 0) {
-                result.body.hits.forEach( resultRecipe => {
-                    let recipe = new Recipe(resultRecipe.recipe);
-                    saveToDatabase(recipe);
-                });
-            }
-            res.send(recipeResults);
-            getFromDatabase('Peanut-Free', 'health_labels');
         });
 }
 
