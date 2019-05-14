@@ -39,10 +39,7 @@ function Recipe (recipe){
 
 //API Routes
 app.get('/', getAll);
-app.get('/healthsearch', getRecipes);
-app.get('/inputsearch', getRecipes);
-app.get('/inputhealthsearch', getRecipes);
-
+app.get('/search', getRecipes);
 
 /********* sql queries to postgres *********/
 function saveToDatabase(recipe){
@@ -56,8 +53,7 @@ function getFromDatabase(req){
     let inputType;
     let columnName;
     let SQL;
-    console.log(req.query);
-    console.log(req.query.health);
+
     if(req.query.health !== '' && req.query.q !== '') {
         SQL = `SELECT * FROM recipes
         WHERE (ARRAY_TO_STRING(health_labels, '||') LIKE '%${req.query.health}%' AND ARRAY_TO_STRING(ingredients, '||') LIKE '%${req.query.q}%');`;
@@ -66,7 +62,6 @@ function getFromDatabase(req){
         if (req.query.health !== '') {
             inputType = 'health';
             columnName = 'health_labels';
-            console.log('in correct query');
         } else {
             inputType = req.query.q;
             columnName = 'ingredients';
@@ -101,16 +96,13 @@ function getRecipes(req, res) {
     getFromDatabase(req)
         .then(result => {
 
-            console.log('in RESULT', result);
             if(result.rowCount > 0) {
                 result.rows.forEach(row => {
                     new Recipe(row);
-                    //console.log(row);
                 });
                 return res.send(recipeResults);
             } else { //query
                 let url = '';
-                console.log('!!!!!!!!in api call, req should have health ', req.query.health);
                 if ( req.query.health !== '' && req.query.q !== '') {
                     url = `https://api.edamam.com/search?q=${req.query.q}&health=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
                 } else if ( req.query.health !== '') {
@@ -120,7 +112,6 @@ function getRecipes(req, res) {
                 }
                 return superagent.get(url)
                     .then(result =>{
-                        console.log('new stuff', result.body);
                         if(result.body.hits.length > 0) {
                             result.body.hits.forEach( resultRecipe => {
                                 let recipe = new Recipe(resultRecipe.recipe);
