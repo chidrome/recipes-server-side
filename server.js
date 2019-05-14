@@ -61,20 +61,11 @@ function Recipe (recipe){
     this.url = recipe.url;
     this.calories = Math.ceil(Number(recipe.calories));
     this.totalTime = Number(recipe.totalTime);
-    this.ingredients = recipe.ingredientLines; //parseIngredients(recipe.ingredients);
+    this.ingredients = recipe.ingredientLines;
     this.dietLabels = recipe.dietLabels;
     this.healthLabels = recipe.healthLabels;
     console.log('in the constructor', this);
     recipeResults.push(this);
-}
-
-//helper function to create ingredients array
-function parseIngredients(ingredients) {
-    const results = [];
-    ingredients.forEach( ingredient  => {
-        results.push(ingredient.text);
-    });
-    return results;
 }
 
 function saveToDatabase(recipe){
@@ -85,21 +76,24 @@ function saveToDatabase(recipe){
 }
 
 //API Routes
-app.get('/:diet', getRecipes);
+app.get('/', (res, req) => {
+    console.log('hello, welcome to the back end.');
+});
+app.get('/:health', getRecipes);
 app.get('/:q', getRecipes);
-app.get('/:q/:diet', getRecipes);
+app.get('/:q/:health', getRecipes);
 
 //Path functions
 function getRecipes(req, res) {
     let url = '';
 
-    // if ( req.query.diet && req.query.q ) {
-    //     url = `https://api.edamam.com/search?q=${req.query.q}&diet=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-    // } else if ( req.query.diet ) {
-    //     url = `https://api.edamam.com/search?q=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-    // } else {
-    //     url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-    // }
+    if ( req.query.health && req.query.q ) {
+        url = `https://api.edamam.com/search?q=${req.query.q}&health=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+    } else if ( req.query.health ) {
+        url = `https://api.edamam.com/search?q=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+    } else {
+        url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+    }
     url = `https://api.edamam.com/search?q=squid&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
 
     return superagent.get(url)
