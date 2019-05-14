@@ -14,7 +14,7 @@ require('dotenv').config();
 
 // Application Setup
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 
@@ -39,9 +39,9 @@ function Recipe (recipe){
 
 //API Routes
 app.get('/', getAll);
-app.get('/healthsearch/:health', getRecipes);
-app.get('/labelsearch/:q', getRecipes);
-app.get('/labelhealthsearch/:q/:health', getRecipes);
+app.get('/healthsearch', getRecipes);
+app.get('/inputsearch', getRecipes);
+app.get('/inputhealthsearch', getRecipes);
 
 
 /********* sql queries to postgres *********/
@@ -56,6 +56,8 @@ function getFromDatabase(req){
     let inputType;
     let columnName;
     let SQL;
+    console.log(req.query);
+    console.log(req.query.q);
     if(req.query.health && req.query.q) {
         SQL = `SELECT * FROM recipes
         WHERE (ARRAY_TO_STRING(health_labels, '||') LIKE '%${req.query.health}%' AND ARRAY_TO_STRING(ingredients, '||') LIKE '%${req.query.q}%');`;
@@ -78,6 +80,7 @@ function getAll(req, res) {
     const SQL = 'SELECT * FROM recipes;';
 
     return client.query(SQL).then(result => {
+        recipeResults = [];
         if(result.rowCount > 0) {
             result.rows.forEach(row => {
                 new Recipe(row);
@@ -92,7 +95,7 @@ function getAll(req, res) {
 
 /*************** calls to api *****************************/
 function getRecipes(req, res) {
-
+    recipeResults = [];
     getFromDatabase(req)
         .then(result => {
             if(result.rowCount > 0) {
@@ -122,6 +125,9 @@ function getRecipes(req, res) {
                         res.send(recipeResults);
                     });
             }
+        })
+        .catch(error=> {
+            console.log(`Your shit's erroring out ${error}`);
         });
 }
 
