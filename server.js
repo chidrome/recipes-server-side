@@ -57,15 +57,16 @@ function getFromDatabase(req){
     let columnName;
     let SQL;
     console.log(req.query);
-    console.log(req.query.q);
-    if(req.query.health && req.query.q) {
+    console.log(req.query.health);
+    if(req.query.health !== '' && req.query.q !== '') {
         SQL = `SELECT * FROM recipes
         WHERE (ARRAY_TO_STRING(health_labels, '||') LIKE '%${req.query.health}%' AND ARRAY_TO_STRING(ingredients, '||') LIKE '%${req.query.q}%');`;
     }
     else {
-        if (!req.query.q) {
+        if (req.query.health !== '') {
             inputType = 'health';
             columnName = 'health_labels';
+            console.log('in correct query');
         } else {
             inputType = req.query.q;
             columnName = 'ingredients';
@@ -77,14 +78,15 @@ function getFromDatabase(req){
 
 //get all recipes
 function getAll(req, res) {
+    recipeResults = [];
+
     const SQL = 'SELECT * FROM recipes;';
 
     return client.query(SQL).then(result => {
-        recipeResults = [];
         if(result.rowCount > 0) {
             result.rows.forEach(row => {
                 new Recipe(row);
-                console.log(row);
+                //(row);
             });
             res.send(recipeResults);
         } else {
@@ -98,31 +100,34 @@ function getRecipes(req, res) {
     recipeResults = [];
     getFromDatabase(req)
         .then(result => {
+
+            console.log('in RESULT', result);
             if(result.rowCount > 0) {
                 result.rows.forEach(row => {
                     new Recipe(row);
-                    console.log(row);
+                    //console.log(row);
                 });
-                res.send(recipeResults);
+                return res.send(recipeResults);
             } else { //query
                 let url = '';
-
-                if ( req.query.health && req.query.q ) {
-                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
-                } else if ( req.query.health ) {
-                    url = `https://api.edamam.com/search?q=${req.query.diet}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+                console.log('!!!!!!!!in api call, req should have health ', req.query.health);
+                if ( req.query.health !== '' && req.query.q !== '') {
+                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+                } else if ( req.query.health !== '') {
+                    url = `https://api.edamam.com/search?q=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
                 } else {
                     url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
                 }
                 return superagent.get(url)
                     .then(result =>{
+                        console.log('new stuff', result.body);
                         if(result.body.hits.length > 0) {
                             result.body.hits.forEach( resultRecipe => {
                                 let recipe = new Recipe(resultRecipe.recipe);
                                 saveToDatabase(recipe);
                             });
                         }
-                        res.send(recipeResults);
+                        return res.send(recipeResults);
                     });
             }
         })
