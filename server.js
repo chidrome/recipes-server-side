@@ -99,12 +99,13 @@ function getRecipes(req, res) {
             if(result.rowCount > 0) {
                 result.rows.forEach(row => {
                     new Recipe(row);
+                    console.log(row);
                 });
                 return res.send(recipeResults);
             } else { //query
                 let url = '';
                 if ( req.query.health !== '' && req.query.q !== '') {
-                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${(req.query.health).toLowerCase()}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
                 } else if ( req.query.health !== '') {
                     url = `https://api.edamam.com/search?q=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
                 } else {
