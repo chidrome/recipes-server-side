@@ -105,11 +105,11 @@ function getRecipes(req, res) {
             } else { //query
                 let url = '';
                 if ( req.query.health !== '' && req.query.q !== '') {
-                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${(req.query.health).toLowerCase()}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${(req.query.health).toLowerCase()}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}&to=100`;
                 } else if ( req.query.health !== '') {
-                    url = `https://api.edamam.com/search?q=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+                    url = `https://api.edamam.com/search?q=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}&to=100`;
                 } else {
-                    url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}`;
+                    url = `https://api.edamam.com/search?q=${req.query.q}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}&to=100`;
                 }
                 return superagent.get(url)
                     .then(result =>{
