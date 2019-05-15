@@ -56,7 +56,7 @@ function getFromDatabase(req){
 
     if(req.query.health !== '' && req.query.q !== '') {
         SQL = `SELECT * FROM recipes
-        WHERE (ARRAY_TO_STRING(health_labels, '||') LIKE '%${req.query.health}%' AND ARRAY_TO_STRING(ingredients, '||') LIKE '%${req.query.q}%');`;
+        WHERE (ARRAY_TO_STRING(health_labels, '||') ILIKE '%${req.query.health}%' AND ARRAY_TO_STRING(ingredients, '||') ILIKE '%${req.query.q}%');`;
     }
     else {
         if (req.query.health !== '') {
@@ -66,7 +66,7 @@ function getFromDatabase(req){
             inputType = req.query.q;
             columnName = 'ingredients';
         }
-        SQL = `SELECT * FROM recipes WHERE ARRAY_TO_STRING(${columnName}, '||') LIKE '%${inputType}%';`;
+        SQL = `SELECT * FROM recipes WHERE ARRAY_TO_STRING(${columnName}, '||') ILIKE '%${inputType}%';`;
     }
     return client.query(SQL);
 }
@@ -104,8 +104,11 @@ function getRecipes(req, res) {
                 return res.send(recipeResults);
             } else { //query
                 let url = '';
-                if ( req.query.health !== '' && req.query.q !== '') {
-                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${(req.query.health).toLowerCase()}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}&to=100`;
+                console.log(req.query);
+                console.log(JSON.stringify(req.query.q).toLowerCase());
+                if ( req.query.health && req.query.q) {
+                    console.log('should not be here');
+                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}&to=100`;
                 } else if ( req.query.health !== '') {
                     url = `https://api.edamam.com/search?q=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}&to=100`;
                 } else {
