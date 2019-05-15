@@ -96,19 +96,15 @@ function getRecipes(req, res) {
     getFromDatabase(req)
         .then(result => {
 
-            if(result.rowCount > 0) {
+            if(result.rowCount > 99) {
                 result.rows.forEach(row => {
                     new Recipe(row);
-                    console.log(row);
                 });
                 return res.send(recipeResults);
             } else { //query
                 let url = '';
-                console.log(req.query);
-                console.log(JSON.stringify(req.query.q).toLowerCase());
                 if ( req.query.health && req.query.q) {
-                    console.log('should not be here');
-                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}&to=100`;
+                    url = `https://api.edamam.com/search?q=${req.query.q}&health=${req.query.health.toLowerCase()}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}&to=100`;
                 } else if ( req.query.health !== '') {
                     url = `https://api.edamam.com/search?q=${req.query.health}&app_id=${process.env.API_ID}&app_key=${process.env.API_KEY}&to=100`;
                 } else {
@@ -128,6 +124,7 @@ function getRecipes(req, res) {
         })
         .catch(error=> {
             console.log(`Your shit's erroring out ${error}`);
+            res.send('There are no results for this search');
         });
 }
 
