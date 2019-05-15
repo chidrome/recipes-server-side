@@ -5,7 +5,7 @@ CREATE TABLE recipes (
   label VARCHAR(100),
   image VARCHAR(200) UNIQUE,
   url VARCHAR(200) UNIQUE,
-  yield INTEGER,
+  yield NUMERIC,
   calories INTEGER,
   total_time INTEGER,
   ingredients text[],
