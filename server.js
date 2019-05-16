@@ -150,5 +150,5 @@ function getRecipes(req, res) {
         });
 }
 
-app.listen(PORT, () => console.log(`listening on ${PORT}`));
+app.listen(process.env.PORT, () => console.log(`listening on ${PORT}`));
 
