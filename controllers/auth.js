@@ -50,12 +50,11 @@ router.post('/signup', (req, res) => {
         .then(results => {
             if(results.rowCount === 0){
                 bcrypt.hash(req.body.password, 10, (error, hash) => {
-                    const SQL = 'INSERT into users (name, email, password) VALUES($1, $2, $3) ON CONFLICT DO NOTHING;';
+                    const SQL = 'INSERT into users (name, email, password) VALUES($1, $2, $3) ON CONFLICT DO NOTHING RETURNING *;';
                     const values = [req.body.name.toLowerCase(), req.body.email.toLowerCase(), hash];
                     client.query(SQL, values)
                         .then(results => {
-                            console.log('Hi');
-                            console.log(results);
+                            // created a new user. Yay! Time to send a token for them!
                             const token = jwt.sign(results.rows[0], process.env.JWT_SECRET, {
                                 expiresIn: 60 * 60 * 24 // 24 hours (in seconds)
                             });
@@ -72,11 +71,8 @@ router.post('/signup', (req, res) => {
                 });
                 console.log(`results after the bcrypt------------- ${results}`);
             } else if(results.rowCount === 1){
-                // created a new user. Yay! Time to send a token for them!
-                const token = jwt.sign(results.rows[0], process.env.JWT_SECRET, {
-                    expiresIn: 60 * 60 * 24 // 24 hours (in seconds)
-                });
-                res.send({ token: token });
+                // email already exists
+                console.log('Email already exists!');
             }
         })
         .catch(error => {
