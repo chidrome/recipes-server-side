@@ -3,8 +3,8 @@ DROP table if exists recipes;
 CREATE TABLE recipes (
   id SERIAL PRIMARY KEY,
   label VARCHAR(100),
-  image VARCHAR(200) UNIQUE,
-  url VARCHAR(200) UNIQUE,
+  image VARCHAR(500) UNIQUE,
+  url VARCHAR(500) UNIQUE,
   yield NUMERIC,
   calories INTEGER,
   total_time INTEGER,
