@@ -8,15 +8,19 @@ const express = require('express');
 const superagent = require('superagent');
 const pg = require('pg');
 const cors = require('cors');
+const expressJwt = require('express-jwt');
+const logger = require('morgan');
 
 // Load environment variables from .env file
 require('dotenv').config();
 
-// Application Setup
+// Application/Middleware Setup
 const app = express();
 const PORT = process.env.PORT || 5000;
-
+app.use(logger('dev'));
 app.use(cors());
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({extended: false}));
 
 //Database Setup
 const client = new pg.Client(process.env.DATABASE_URL);
@@ -37,9 +41,27 @@ function Recipe (recipe){
     recipeResults.push(this);
 }
 
+// Helper function: This allows our server to parse the incoming token from the client
+// This is being run as middleware, so it has access to the incoming request
+function fromRequest(req){
+    console.log('hello', req.body);
+    if(req.body.headers &&
+      req.body.headers.Authorization &&
+      req.body.headers.Authorization.split(' ')[0] === 'Bearer'){
+        return req.body.headers.Authorization.split(' ')[1];
+    }
+    return null;
+}
+
 //API Routes
 app.get('/', getAll);
 app.get('/search', getRecipes);
+app.use('/auth', expressJwt({
+    secret: process.env.JWT_SECRET,
+    getToken: fromRequest
+}).unless({
+    path: [{ url: '/auth/login', methods: ['POST'] }, { url: '/auth/signup', methods: ['POST'] }]
+}), require('./controllers/auth'));
 
 /********* sql queries to postgres *********/
 function saveToDatabase(recipe){
